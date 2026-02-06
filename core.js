@@ -267,7 +267,29 @@ faceMesh.onResults((results) => {
 const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
 hands.setOptions({ maxNumHands: 1 });
 hands.onResults((results) => {
-    // Basic hand AR rendering logic here (Rings/Bangles)
+  const ringImg = window.JewelsState.active.rings;
+  const bangleImg = window.JewelsState.active.bangles;
+  if (!ringImg && !bangleImg) return;
+
+  const w = videoElement.videoWidth; const h = videoElement.videoHeight;
+  canvasCtx.save();
+  currentCameraMode === 'environment' ? canvasCtx.setTransform(1,0,0,1,0,0) : (canvasCtx.translate(w, 0), canvasCtx.scale(-1, 1));
+
+  if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
+    const lm = results.multiHandLandmarks[0];
+    const ringFinger = { x: lm[13].x * w, y: lm[13].y * h };
+    const wrist = { x: lm[0].x * w, y: lm[0].y * h };
+
+    if (ringImg) {
+      let rw = 30; let rh = (ringImg.height/ringImg.width) * rw;
+      canvasCtx.drawImage(ringImg, ringFinger.x - rw/2, ringFinger.y, rw, rh);
+    }
+    if (bangleImg) {
+      let bw = 80; let bh = (bangleImg.height/bangleImg.width) * bw;
+      canvasCtx.drawImage(bangleImg, wrist.x - bw/2, wrist.y, bw, bh);
+    }
+  }
+  canvasCtx.restore();
 });
 
 /* --- 7. CAPTURE & UTILS --- */
@@ -285,17 +307,22 @@ function takeSnapshot() {
 
 function showToast(msg) { 
     const x = document.getElementById("toast-notification"); 
-    x.innerText = msg; x.className = "show"; 
-    setTimeout(() => x.className = "", 3000); 
+    if(x) {
+        x.innerText = msg; x.className = "show"; 
+        setTimeout(() => x.className = "", 3000); 
+    }
 }
 
 function triggerFlash() { 
-    flashOverlay.classList.add('flash-active'); 
-    setTimeout(() => flashOverlay.classList.remove('flash-active'), 300); 
+    if(flashOverlay) {
+        flashOverlay.classList.add('flash-active'); 
+        setTimeout(() => flashOverlay.classList.remove('flash-active'), 300); 
+    }
 }
 
 function closePreview() { document.getElementById('preview-modal').style.display = 'none'; }
 function closeGallery() { document.getElementById('gallery-modal').style.display = 'none'; }
+function prepareDailyDrop() {}
 
 // Exports
 window.selectJewelryType = selectJewelryType;
